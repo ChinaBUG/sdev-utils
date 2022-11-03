@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用JS获取视频的每一帧</title>
+</head>
+<style>
+    .layout-flex {
+        display: flex;
+        overflow-x: scroll;
+        padding: 10px 0;
+    }
+    
+    .layout-flex-item {
+        list-style: none;
+        padding: 0;
+        margin: 0 10px;
+        border: 1px solid #d4d4d4;
+        box-shadow: 1px 1px 7px 0px #afafaf;
+    }
+    
+    .layout-flex-item.select {
+        list-style: disc;
+    }
+</style>
+
+<body>
+
+    <!-- https://zhuanlan.zhihu.com/p/146577946 -->
+    <!-- https://javascript.info/blob -->
+    <!-- https://huyu.info/blog/detail/188 -->
+
+    <input type="file" onchange="onChange(this.files)" />
+    <script src="https://cdn.jsdelivr.net/npm/video-metadata-thumbnails/lib/video-metadata-thumbnails.iife.js"></script>
+    <script>
+        const download = (fileName, blob) => {
+            const link = document.createElement("a");
+            link.href = window.URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(link.href);
+        };
+
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const fileReader = new FileReader();
+                fileReader.onload = (e) => {
+                    resolve(e.target.result);
+                };
+                // readAsDataURL
+                fileReader.readAsDataURL(blob);
+                fileReader.onerror = () => {
+                    reject(new Error('blobToBase64 error'));
+                };
+            });
+        }
+
+        function onChange(files) {
+            __video_metadata_thumbnails__.getMetadata(files[0]).then(function(metadata) {
+                console.log('Metadata: ', metadata);
+            })
+            __video_metadata_thumbnails__.getThumbnails(files[0]).then(function(thumbnails) {
+                console.log('Thumbnails: ', thumbnails);
+
+                var ul = document.createElement("ul");
+                ul.id = "thumbnailsLi";
+                ul.classList = "layout-flex";
+                document.body.appendChild(ul);
+
+                thumbnails.forEach(function(blob, idx) {
+                    // console.log(blob);
+                    // 1.下载
+                    // let e = document.createEvent("MouseEvent");
+                    // let a = document.createElement("a");
+                    // a.download = idx + '.jpg';
+                    // a.href = window.URL.createObjectURL(blob.blob);
+                    // a.dataset.downloadurl = [blob.blob.type, a.download, a.href].join(":");
+                    // e.initMouseEvent("click", true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+                    // a.dispatchEvent(e);
+                    // 2.图片: https://zhuanlan.zhihu.com/p/57700185
+                    let li = document.createElement("li");
+                    li.id = `item-${idx}`;
+                    li.classList = "layout-flex-item";
+                    ul.appendChild(li);
+                    blobToBase64(blob.blob).then(res => {
+                        console.log(`base64(${idx}): `, res);
+                        let img = document.createElement("img");
+                        img.src = `${res}`;
+                        img.classList = `item-img-${idx}`;
+                        li.appendChild(img);
+                    });
+                });
+            })
+        }
+    </script>
+</body>
+
+</html>
